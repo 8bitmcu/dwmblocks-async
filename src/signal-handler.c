@@ -14,7 +14,7 @@
 typedef struct signalfd_siginfo signal_info;
 
 signal_handler signal_handler_new(
-    block *const blocks, const unsigned short block_count,
+    block **blocks, const unsigned short block_count,
     const signal_refresh_callback refresh_callback,
     const signal_timer_callback timer_callback) {
     signal_handler handler = {
@@ -43,7 +43,7 @@ int signal_handler_init(signal_handler *const handler) {
     (void)sigaddset(&set, SIGTERM);
 
     for (unsigned short i = 0; i < handler->block_count; ++i) {
-        const block *const block = &handler->blocks[i];
+        block *block = handler->blocks[i];
         if (block->signal > 0) {
             if (sigaddset(&set, SIGRTMIN + block->signal) != 0) {
                 (void)fprintf(
@@ -112,7 +112,7 @@ int signal_handler_process(signal_handler *const handler, timer *const timer) {
     }
 
     for (unsigned short i = 0; i < handler->block_count; ++i) {
-        block *const block = &handler->blocks[i];
+        block *const block = handler->blocks[i];
         if (block->signal == signal - SIGRTMIN) {
             const uint8_t button = (uint8_t)info.ssi_int;
             block_execute(block, button);

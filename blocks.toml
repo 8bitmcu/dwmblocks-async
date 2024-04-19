@@ -1,0 +1,29 @@
+# String used to delimit block outputs in the status.
+delimiter = "  "
+
+# Maximum number of Unicode characters that a block can output.
+max_block_output_length = 45
+
+# Control whether blocks are clickable.
+clickable_blocks = 1
+
+# Control whether a leading delimiter should be prepended to the status.
+leading_delimiter = 0
+
+# Control whether a trailing delimiter should be appended to the status.
+trailing_delimiter = 0
+
+# command: The command you wish to execute in your block.
+# interval: Time in seconds, after which you want the block to update. If `0`, the block will never be updated.
+# signal: Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable.
+blocks = [ { command = "sb-mail",        interval =  600,    signal = 1 },
+           { command = "sb-music",       interval =    0,    signal = 2 },
+           { command = "sb-disk",        interval = 1800,    signal = 3 },
+           { command = "sb-memory",      interval =   10,    signal = 4 },
+           { command = "sb-loadavg",     interval =    5,    signal = 5 },
+           { command = "sb-mic",         interval =    0,    signal = 6 },
+           { command = "sb-record",      interval =    0,    signal = 7 },
+           { command = "sb-volume",      interval =    0,    signal = 8 },
+           { command = "sb-battery",     interval =    5,    signal = 9 },
+           { command = "sb-date",        interval =    1,    signal = 10 } ]
+

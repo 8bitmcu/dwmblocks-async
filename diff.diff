@@ -1,0 +1,1105 @@
+On branch main
+Your branch is up to date with 'origin2/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	deleted:    .github/FUNDING.yml
+	new file:   .gitmodules
+	modified:   Makefile
+	modified:   README.md
+	new file:   blocks.toml
+	deleted:    config.h
+	modified:   include/block.h
+	modified:   include/main.h
+	modified:   include/signal-handler.h
+	modified:   include/status.h
+	modified:   include/timer.h
+	new file:   include/tomlc.h
+	modified:   include/util.h
+	modified:   include/watcher.h
+	deleted:    preview.png
+	modified:   src/block.c
+	modified:   src/main.c
+	modified:   src/signal-handler.c
+	modified:   src/status.c
+	modified:   src/timer.c
+	new file:   src/tomlc.c
+	modified:   src/watcher.c
+	new file:   tomlc99
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	diff.diff
+
+diff --git a/.github/FUNDING.yml b/.github/FUNDING.yml
+deleted file mode 100644
+index c7fd590..0000000
+--- a/.github/FUNDING.yml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-patreon: UtkarshVerma
+-ko_fi: UtkarshVerma
+-liberapay: UtkarshVerma
+-custom: https://paypal.me/UtkarshVermaI
+diff --git a/.gitmodules b/.gitmodules
+new file mode 100644
+index 0000000..f033c8c
+--- /dev/null
++++ b/.gitmodules
+@@ -0,0 +1,3 @@
++[submodule "tomlc99"]
++	path = tomlc99
++	url = https://github.com/cktan/tomlc99
+diff --git a/Makefile b/Makefile
+index 635673e..e459c8c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -16,7 +16,7 @@ CFLAGS += -Wall -Wpedantic -Wextra -Wswitch-enum
+ CFLAGS += $(shell pkg-config --cflags $(LIBS))
+ LDLIBS := $(shell pkg-config --libs $(LIBS))
+ 
+-SRCS := $(wildcard $(SRC_DIR)/*.c)
++SRCS := $(wildcard $(SRC_DIR)/*.c) tomlc99/toml.c
+ OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(SRCS:.c=.o))
+ 
+ INSTALL_DIR := $(DESTDIR)$(PREFIX)/bin
+@@ -33,7 +33,7 @@ endif
+ 
+ all: $(BUILD_DIR)/$(BIN)
+ 
+-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c config.h
++$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+ 	$Qmkdir -p $(@D)
+ 	$(PRINTF) "CC" $@
+ 	$Q$(COMPILE.c) -o $@ $<
+diff --git a/README.md b/README.md
+index 69b72da..3fde466 100644
+--- a/README.md
++++ b/README.md
+@@ -1,81 +1,26 @@
+-# dwmblocks-async
++# dwmblocks-async - dwm status bar (fork)
+ 
+-A [`dwm`](https://dwm.suckless.org) status bar that has a modular, async
+-design, so it is always responsive. Imagine `i3blocks`, but for `dwm`.
++dwmblocks-async [(original)](https://github.com/UtkarshVerma/dwmblocks-async) is a dwm status bar that has a modular, async design, so it is always responsive. Imagine i3blocks, but for dwm. [Why dwmblocks?](https://github.com/8bitmcu/dwmblocks-async?tab=readme-ov-file#why-dwmblocks) [Why dwmblocks-async?](https://github.com/8bitmcu/dwmblocks-async?tab=readme-ov-file#why-dwmblocks-async).
+ 
+-![A lean config of dwmblocks-async.](preview.png)
+ 
+-## Features
+ 
+-- [Modular](#modifying-the-blocks)
+-- Lightweight
+-- [Suckless](https://suckless.org/philosophy)
+-- Blocks:
+-  - [Clickable](#clickable-blocks)
+-  - Loaded asynchronously
+-  - [Updates can be externally triggered](#signalling-changes)
+-- Compatible with `i3blocks` scripts
++This fork adds a configuration file for the blocks. Check out [blocks.toml](blocks.toml)!
+ 
+-> Additionally, this build of `dwmblocks` is more optimized and fixes the
+-> flickering of the status bar when scrolling.
+ 
+-## Why `dwmblocks`?
++## Requirements
+ 
+-In `dwm`, you have to set the status bar through an infinite loop, like so:
++- dwm patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
+ 
+-```sh
+-while :; do
+-    xsetroot -name "$(date)"
+-    sleep 30
+-done
+-```
+-
+-This is inefficient when running multiple commands that need to be updated at
+-different frequencies. For example, to display an unread mail count and a clock
+-in the status bar:
+-
+-```sh
+-while :; do
+-    xsetroot -name "$(mailCount) $(date)"
+-    sleep 60
+-done
+-```
+-
+-Both are executed at the same rate, which is wasteful. Ideally, the mail
+-counter would be updated every thirty minutes, since there's a limit to the
+-number of requests I can make using Gmail's APIs (as a free user).
+-
+-`dwmblocks` allows you to divide the status bar into multiple blocks, each of
+-which can be updated at its own interval. This effectively addresses the
+-previous issue, because the commands in a block are only executed once within
+-that time frame.
+-
+-## Why `dwmblocks-async`?
++## Building and installing
+ 
+-The magic of `dwmblocks-async` is in the `async` part. Since vanilla
+-`dwmblocks` executes the commands of each block sequentially, it leads to
+-annoying freezes. In cases where one block takes several seconds to execute,
+-like in the mail and date blocks example from above, the delay is clearly
+-visible. Fire up a new instance of `dwmblocks` and you'll see!
++1. clone this repository locally on your machine
++2. run `make clean && sudo make install` from within the repository folder
++3. copy and edit the config file: `cp /etc/dwm/blocks.toml $XDG_CONFIG_HOME/dwm/blocks.toml`
+ 
+-With `dwmblocks-async`, the computer executes each block asynchronously
+-(simultaneously).
+-
+-## Installation
+-
+-Clone this repository, modify `config.h` appropriately, then compile the
+-program:
+-
+-```sh
+-git clone https://github.com/UtkarshVerma/dwmblocks-async.git
+-cd dwmblocks-async
+-vi config.h
+-sudo make install
+-```
+ 
+ ## Usage
+ 
+-To set `dwmblocks-async` as your status bar, you need to run it as a background
++To set dwmblocks-async as your status bar, you need to run it as a background
+ process on startup. One way is to add the following to `~/.xinitrc`:
+ 
+ ```sh
+@@ -83,46 +28,7 @@ process on startup. One way is to add the following to `~/.xinitrc`:
+ dwmblocks &
+ ```
+ 
+-### Modifying the blocks
+-
+-You can define your status bar blocks in `config.h`:
+-
+-```c
+-#define BLOCKS(X) \
+-    ...
+-    X("volume", 0, 5), \
+-    X("date", 1800, 1), \
+-    ...
+-```
+-
+-Each block has the following properties:
+-
+-| Property        | Description                                                                                                                                        |
+-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+-| Command         | The command you wish to execute in your block.                                                                                                     |
+-| Update interval | Time in seconds, after which you want the block to update. If `0`, the block will never be updated.                                                |
+-| Update signal   | Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable. |
+-
+-Apart from defining the blocks, features can be toggled through `config.h`:
+-
+-```c
+-// String used to delimit block outputs in the status.
+-#define DELIMITER "  "
+-
+-// Maximum number of Unicode characters that a block can output.
+-#define MAX_BLOCK_OUTPUT_LENGTH 45
+-
+-// Control whether blocks are clickable.
+-#define CLICKABLE_BLOCKS 1
+-
+-// Control whether a leading delimiter should be prepended to the status.
+-#define LEADING_DELIMITER 0
+-
+-// Control whether a trailing delimiter should be appended to the status.
+-#define TRAILING_DELIMITER 0
+-```
+-
+-### Signalling changes
++### Signaling changes
+ 
+ Most status bars constantly rerun all scripts every few seconds. This is an
+ option here, but a superior choice is to give your block a signal through which
+@@ -130,7 +36,7 @@ you can indicate it to update on relevant event, rather than have it rerun
+ idly.
+ 
+ For example, the volume block has the update signal `5` by default. I run
+-`kill -39 $(pidof dwmblocks)` alongside my volume shortcuts in `dwm` to only
++`kill -39 $(pidof dwmblocks)` alongside my volume shortcuts in dwm to only
+ update it when relevant. Just add `34` to your signal number! You could also
+ run `pkill -RTMIN+5 dwmblocks`, but it's slower.
+ 
+@@ -139,6 +45,7 @@ To refresh all the blocks, run `kill -10 $(pidof dwmblocks)` or
+ 
+ > All blocks must have different signal numbers!
+ 
++
+ ### Clickable blocks
+ 
+ Like `i3blocks`, this build allows you to build in additional actions into your
+@@ -146,18 +53,4 @@ scripts in response to click events. You can check out
+ [my status bar scripts](https://github.com/UtkarshVerma/dotfiles/tree/main/.local/bin/statusbar)
+ as references for using the `$BLOCK_BUTTON` variable.
+ 
+-To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your
+-`config.h`:
+-
+-```c
+-#define CLICKABLE_BLOCKS 1
+-```
+-
+-Apart from that, you need `dwm` to be patched with
+-[statuscmd](https://dwm.suckless.org/patches/statuscmd/).
+-
+-## Credits
+-
+-This work would not have been possible without
+-[Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and
+-[Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
++To use this feature, set `clickable_blocks` to 1 in your config file
+diff --git a/blocks.toml b/blocks.toml
+new file mode 100644
+index 0000000..0d65b2c
+--- /dev/null
++++ b/blocks.toml
+@@ -0,0 +1,29 @@
++# String used to delimit block outputs in the status.
++delimiter = "  "
++
++# Maximum number of Unicode characters that a block can output.
++max_block_output_length = 45
++
++# Control whether blocks are clickable.
++clickable_blocks = 1
++
++# Control whether a leading delimiter should be prepended to the status.
++leading_delimiter = 0
++
++# Control whether a trailing delimiter should be appended to the status.
++trailing_delimiter = 0
++
++# command: The command you wish to execute in your block.
++# interval: Time in seconds, after which you want the block to update. If `0`, the block will never be updated.
++# signal: Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable.
++blocks = [ { command = "sb-mail",        interval =  600,    signal = 1 },
++           { command = "sb-music",       interval =    0,    signal = 2 },
++           { command = "sb-disk",        interval = 1800,    signal = 3 },
++           { command = "sb-memory",      interval =   10,    signal = 4 },
++           { command = "sb-loadavg",     interval =    5,    signal = 5 },
++           { command = "sb-mic",         interval =    0,    signal = 6 },
++           { command = "sb-record",      interval =    0,    signal = 7 },
++           { command = "sb-volume",      interval =    0,    signal = 8 },
++           { command = "sb-battery",     interval =    5,    signal = 9 },
++           { command = "sb-date",        interval =    1,    signal = 10 } ]
++
+diff --git a/config.h b/config.h
+deleted file mode 100644
+index a02c0ca..0000000
+--- a/config.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-#ifndef CONFIG_H
+-#define CONFIG_H
+-
+-// String used to delimit block outputs in the status.
+-#define DELIMITER "  "
+-
+-// Maximum number of Unicode characters that a block can output.
+-#define MAX_BLOCK_OUTPUT_LENGTH 45
+-
+-// Control whether blocks are clickable.
+-#define CLICKABLE_BLOCKS 1
+-
+-// Control whether a leading delimiter should be prepended to the status.
+-#define LEADING_DELIMITER 0
+-
+-// Control whether a trailing delimiter should be appended to the status.
+-#define TRAILING_DELIMITER 0
+-
+-// Define blocks for the status feed as X(cmd, interval, signal).
+-#define BLOCKS(X)         \
+-    X("sb-mail", 600, 1)  \
+-    X("sb-music", 0, 2)   \
+-    X("sb-disk", 1800, 3) \
+-    X("sb-memory", 10, 4) \
+-    X("sb-loadavg", 5, 5) \
+-    X("sb-mic", 0, 6)     \
+-    X("sb-record", 0, 7)  \
+-    X("sb-volume", 0, 8)  \
+-    X("sb-battery", 5, 9) \
+-    X("sb-date", 1, 10)
+-
+-#endif  // CONFIG_H
+diff --git a/include/block.h b/include/block.h
+index 555549c..03990b1 100644
+--- a/include/block.h
++++ b/include/block.h
+@@ -5,24 +5,24 @@
+ #include <stdint.h>
+ #include <sys/types.h>
+ 
+-#include "config.h"
+ #include "util.h"
+ 
+ typedef struct {
+-    const char *const command;
+-    const unsigned int interval;
+-    const int signal;
++    const char *command;
++    unsigned int interval;
++    int signal;
+ 
+     int pipe[PIPE_FD_COUNT];
+-    char output[MAX_BLOCK_OUTPUT_LENGTH * UTF8_MAX_BYTE_COUNT + 1];
++    char *output;
++    int output_len;
+     pid_t fork_pid;
+ } block;
+ 
+-block block_new(const char *const command, const unsigned int interval,
++block *block_new(const char *const command, const unsigned int interval,
+                 const int signal);
+-int block_init(block *const block);
+-int block_deinit(block *const block);
+-int block_execute(block *const block, const uint8_t button);
+-int block_update(block *const block);
++int block_init(block *block);
++int block_deinit(block *block);
++int block_execute(block *block, const uint8_t button);
++int block_update(block *block);
+ 
+ #endif  // BLOCK_H
+diff --git a/include/main.h b/include/main.h
+index b37a6b1..a25dbab 100644
+--- a/include/main.h
++++ b/include/main.h
+@@ -3,14 +3,8 @@
+ 
+ #include <signal.h>
+ 
+-#include "config.h"
+ #include "util.h"
+ 
+ #define REFRESH_SIGNAL SIGUSR1
+ 
+-// Utilise C's adjacent string concatenation to count the number of blocks.
+-#define X(...) "."
+-enum { BLOCK_COUNT = LEN(BLOCKS(X)) - 1 };
+-#undef X
+-
+ #endif  // MAIN_H
+diff --git a/include/signal-handler.h b/include/signal-handler.h
+index da2d471..ead88b8 100644
+--- a/include/signal-handler.h
++++ b/include/signal-handler.h
+@@ -7,9 +7,9 @@
+ #include "timer.h"
+ 
+ typedef sigset_t signal_set;
+-typedef int (*signal_refresh_callback)(block* const blocks,
++typedef int (*signal_refresh_callback)(block **blocks,
+                                        const unsigned short block_count);
+-typedef int (*signal_timer_callback)(block* const blocks,
++typedef int (*signal_timer_callback)(block **blocks,
+                                      const unsigned short block_code,
+                                      timer* const timer);
+ 
+@@ -18,12 +18,12 @@ typedef struct {
+     const signal_refresh_callback refresh_callback;
+     const signal_timer_callback timer_callback;
+ 
+-    block* const blocks;
++    block **blocks;
+     const unsigned short block_count;
+ } signal_handler;
+ 
+ signal_handler signal_handler_new(
+-    block* const blocks, const unsigned short block_count,
++    block **blocks, const unsigned short block_count,
+     const signal_refresh_callback refresh_callback,
+     const signal_timer_callback timer_callback);
+ int signal_handler_init(signal_handler* const handler);
+diff --git a/include/status.h b/include/status.h
+index 48fb3d8..d328f00 100644
+--- a/include/status.h
++++ b/include/status.h
+@@ -4,26 +4,22 @@
+ #include <stdbool.h>
+ 
+ #include "block.h"
+-#include "config.h"
+ #include "main.h"
+ #include "util.h"
+ #include "x11.h"
++#include "tomlc.h"
+ 
+ typedef struct {
+-#define STATUS_LENGTH                                                        \
+-    ((BLOCK_COUNT * (MEMBER_LENGTH(block, output) - 1) + CLICKABLE_BLOCKS) + \
+-     (BLOCK_COUNT - 1 + LEADING_DELIMITER + TRAILING_DELIMITER) *            \
+-         (LEN(DELIMITER) - 1) +                                              \
+-     1)
+-    char current[STATUS_LENGTH];
+-    char previous[STATUS_LENGTH];
+-#undef STATUS_LENGTH
++    char *current;
++    char *previous;
+ 
+-    const block* const blocks;
++    block **blocks;
+     const unsigned short block_count;
++
++    int status_sz;
+ } status;
+ 
+-status status_new(const block* const blocks, const unsigned short block_count);
++status status_new(block **blocks, const unsigned short block_count);
+ bool status_update(status* const status);
+ int status_write(const status* const status, const bool is_debug_mode,
+                  x11_connection* const connection);
+diff --git a/include/timer.h b/include/timer.h
+index 1ec7f75..ea9352e 100644
+--- a/include/timer.h
++++ b/include/timer.h
+@@ -14,8 +14,8 @@ typedef struct {
+     const unsigned int reset_value;
+ } timer;
+ 
+-timer timer_new(const block *const blocks, const unsigned short block_count);
++timer timer_new(block **blocks, const unsigned short block_count);
+ int timer_arm(timer *const timer);
+-bool timer_must_run_block(const timer *const timer, const block *const block);
++bool timer_must_run_block(const timer *const timer, block *block);
+ 
+ #endif  // TIMER_H
+diff --git a/include/tomlc.h b/include/tomlc.h
+new file mode 100644
+index 0000000..29c39bd
+--- /dev/null
++++ b/include/tomlc.h
+@@ -0,0 +1,29 @@
++#ifndef TOMLC_H
++#define TOMLC_H
++
++#include "../tomlc99/toml.h"
++#include "block.h"
++#include <stdlib.h>
++#include <string.h>
++
++
++
++extern const char *delimiter;
++extern int delimiter_len;
++
++extern int max_block_output_length;
++extern int clickable_blocks;
++extern int leading_delimiter;
++extern int trailing_delimiter;
++
++extern int n_blocks;
++extern block **c_blocks;
++
++void read_cfgfile();
++
++int cfg_read_str(toml_table_t *conf, char *key, const char **dest);
++void cfg_read_float(toml_table_t *conf, char *key, float *dest);
++void cfg_read_int(toml_table_t *conf, char *key, int *dest);
++int cfg_read_strarr(toml_table_t *conf, char *key, const char ***dest, int ins_null);
++
++#endif  // TOMLC_H
+diff --git a/include/util.h b/include/util.h
+index a3bdcce..4b3cfc2 100644
+--- a/include/util.h
++++ b/include/util.h
+@@ -7,12 +7,6 @@
+ #define LEN(arr)  (sizeof(arr) / sizeof((arr)[0]))
+ #define BIT(n)    (1 << (n))
+ 
+-// NOLINTBEGIN(bugprone-macro-parentheses)
+-#define MEMBER_SIZE(type, member) sizeof(((type*)NULL)->member)
+-#define MEMBER_LENGTH(type, member) \
+-    (MEMBER_SIZE(type, member) / MEMBER_SIZE(type, member[0]))
+-// NOLINTEND(bugprone-macro-parentheses)
+-
+ #define UTF8_MAX_BYTE_COUNT 4
+ 
+ enum pipe_fd_index {
+diff --git a/include/watcher.h b/include/watcher.h
+index ff31809..cd1f787 100644
+--- a/include/watcher.h
++++ b/include/watcher.h
+@@ -7,21 +7,16 @@
+ #include "block.h"
+ #include "main.h"
+ 
+-enum watcher_fd_index {
+-    SIGNAL_FD = BLOCK_COUNT,
+-    WATCHER_FD_COUNT,
+-};
+-
+ typedef struct pollfd watcher_fd;
+ 
+ typedef struct {
+-    watcher_fd fds[WATCHER_FD_COUNT];
+-    unsigned short active_blocks[BLOCK_COUNT];
++    watcher_fd *fds;
++    unsigned short *active_blocks;
+     unsigned short active_block_count;
+     bool got_signal;
+ } watcher;
+ 
+-int watcher_init(watcher *const watcher, const block *const blocks,
++int watcher_init(watcher *const watcher, block **blocks,
+                  const unsigned short block_count, const int signal_fd);
+ int watcher_poll(watcher *const watcher, const int timeout_ms);
+ 
+diff --git a/preview.png b/preview.png
+deleted file mode 100644
+index 5c00274..0000000
+Binary files a/preview.png and /dev/null differ
+diff --git a/src/block.c b/src/block.c
+index 0a73af6..80d0bd0 100644
+--- a/src/block.c
++++ b/src/block.c
+@@ -10,21 +10,22 @@
+ #include <sys/wait.h>
+ #include <unistd.h>
+ 
+-#include "config.h"
++#include "tomlc.h"
+ #include "util.h"
+ 
+-block block_new(const char *const command, const unsigned int interval,
++block *block_new(const char *const command, const unsigned int interval,
+                 const int signal) {
+-    block block = {
+-        .command = command,
+-        .interval = interval,
+-        .signal = signal,
++    block *b = malloc(sizeof(block));
++    b->command = command;
++    b->interval = interval;
++    b->signal = signal;
++    b->fork_pid = -1;
+ 
+-        .output = {[0] = '\0'},
+-        .fork_pid = -1,
+-    };
++    b->output_len = max_block_output_length * UTF8_MAX_BYTE_COUNT;
++    b->output = malloc(b->output_len * sizeof(char));
++    b->output[0] = '\0';
+ 
+-    return block;
++    return b;
+ }
+ 
+ int block_init(block *const block) {
+@@ -47,6 +48,9 @@ int block_deinit(block *const block) {
+         return 1;
+     }
+ 
++    free(block->output);
++    free(block);
++
+     return 0;
+ }
+ 
+@@ -88,7 +92,8 @@ int block_execute(block *const block, const uint8_t button) {
+ 
+         // Ensure null-termination since fgets() will leave buffer untouched on
+         // no output.
+-        char buffer[LEN(block->output)] = {[0] = null};
++        char buffer[block->output_len];
++        buffer[0] = null;
+         (void)fgets(buffer, LEN(buffer), file);
+ 
+         // Remove trailing newlines.
+@@ -102,7 +107,7 @@ int block_execute(block *const block, const uint8_t button) {
+         }
+ 
+         const size_t output_size =
+-            truncate_utf8_string(buffer, LEN(buffer), MAX_BLOCK_OUTPUT_LENGTH);
++            truncate_utf8_string(buffer, LEN(buffer), max_block_output_length);
+         (void)write(write_fd, buffer, output_size);
+ 
+         exit(EXIT_SUCCESS);
+@@ -112,10 +117,10 @@ int block_execute(block *const block, const uint8_t button) {
+ }
+ 
+ int block_update(block *const block) {
+-    char buffer[LEN(block->output)];
++    char buffer[block->output_len];
+ 
+     const ssize_t bytes_read =
+-        read(block->pipe[READ_END], buffer, LEN(buffer));
++        read(block->pipe[READ_END], buffer, block->output_len);
+     if (bytes_read == -1) {
+         (void)fprintf(stderr,
+                       "error: could not fetch output of \"%s\" block\n",
+diff --git a/src/main.c b/src/main.c
+index e019765..e028bbf 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -4,9 +4,9 @@
+ #include <stdbool.h>
+ #include <stddef.h>
+ 
++#include "tomlc.h"
+ #include "block.h"
+ #include "cli.h"
+-#include "config.h"
+ #include "signal-handler.h"
+ #include "status.h"
+ #include "timer.h"
+@@ -14,9 +14,9 @@
+ #include "watcher.h"
+ #include "x11.h"
+ 
+-static int init_blocks(block *const blocks, const unsigned short block_count) {
++static int init_blocks(block **blocks, const unsigned short block_count) {
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        block *const block = &blocks[i];
++        block *block = blocks[i];
+         if (block_init(block) != 0) {
+             return 1;
+         }
+@@ -25,10 +25,10 @@ static int init_blocks(block *const blocks, const unsigned short block_count) {
+     return 0;
+ }
+ 
+-static int deinit_blocks(block *const blocks,
++static int deinit_blocks(block **blocks,
+                          const unsigned short block_count) {
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        block *const block = &blocks[i];
++        block *block = blocks[i];
+         if (block_deinit(block) != 0) {
+             return 1;
+         }
+@@ -37,16 +37,16 @@ static int deinit_blocks(block *const blocks,
+     return 0;
+ }
+ 
+-static int execute_blocks(block *const blocks,
++static int execute_blocks(block **blocks,
+                           const unsigned short block_count,
+                           const timer *const timer) {
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        block *const block = &blocks[i];
++        block *block = blocks[i];
+         if (!timer_must_run_block(timer, block)) {
+             continue;
+         }
+ 
+-        if (block_execute(&blocks[i], 0) != 0) {
++        if (block_execute(blocks[i], 0) != 0) {
+             return 1;
+         }
+     }
+@@ -54,7 +54,7 @@ static int execute_blocks(block *const blocks,
+     return 0;
+ }
+ 
+-static int trigger_event(block *const blocks, const unsigned short block_count,
++static int trigger_event(block **blocks, const unsigned short block_count,
+                          timer *const timer) {
+     if (execute_blocks(blocks, block_count, timer) != 0) {
+         return 1;
+@@ -67,7 +67,7 @@ static int trigger_event(block *const blocks, const unsigned short block_count,
+     return 0;
+ }
+ 
+-static int refresh_callback(block *const blocks,
++static int refresh_callback(block **blocks,
+                             const unsigned short block_count) {
+     if (execute_blocks(blocks, block_count, NULL) != 0) {
+         return 1;
+@@ -76,7 +76,7 @@ static int refresh_callback(block *const blocks,
+     return 0;
+ }
+ 
+-static int event_loop(block *const blocks, const unsigned short block_count,
++static int event_loop(block **blocks, const unsigned short block_count,
+                       const bool is_debug_mode,
+                       x11_connection *const connection,
+                       signal_handler *const signal_handler) {
+@@ -104,7 +104,7 @@ static int event_loop(block *const blocks, const unsigned short block_count,
+         }
+ 
+         for (unsigned short i = 0; i < watcher.active_block_count; ++i) {
+-            (void)block_update(&blocks[watcher.active_blocks[i]]);
++            (void)block_update(blocks[watcher.active_blocks[i]]);
+         }
+ 
+         const bool has_status_changed = status_update(&status);
+@@ -114,6 +114,11 @@ static int event_loop(block *const blocks, const unsigned short block_count,
+         }
+     }
+ 
++    free(status.current);
++    free(status.previous);
++    free(watcher.active_blocks);
++    free(watcher.fds);
++
+     return 0;
+ }
+ 
+@@ -123,30 +128,27 @@ int main(const int argc, const char *const argv[]) {
+         return 1;
+     }
+ 
++    read_cfgfile();
++
+     x11_connection *const connection = x11_connection_open();
+     if (connection == NULL) {
+         return 1;
+     }
+ 
+-#define BLOCK(command, interval, signal) block_new(command, interval, signal),
+-    block blocks[BLOCK_COUNT] = {BLOCKS(BLOCK)};
+-#undef BLOCK
+-    const unsigned short block_count = LEN(blocks);
+-
+     int status = 0;
+-    if (init_blocks(blocks, block_count) != 0) {
++    if (init_blocks(c_blocks, n_blocks) != 0) {
+         status = 1;
+         goto x11_close;
+     }
+ 
+     signal_handler signal_handler = signal_handler_new(
+-        blocks, block_count, refresh_callback, trigger_event);
++        c_blocks, n_blocks, refresh_callback, trigger_event);
+     if (signal_handler_init(&signal_handler) != 0) {
+         status = 1;
+         goto deinit_blocks;
+     }
+ 
+-    if (event_loop(blocks, block_count, cli_args.is_debug_mode, connection,
++    if (event_loop(c_blocks, n_blocks, cli_args.is_debug_mode, connection,
+                    &signal_handler) != 0) {
+         status = 1;
+     }
+@@ -156,9 +158,10 @@ int main(const int argc, const char *const argv[]) {
+     }
+ 
+ deinit_blocks:
+-    if (deinit_blocks(blocks, block_count) != 0) {
++    if (deinit_blocks(c_blocks, n_blocks) != 0) {
+         status = 1;
+     }
++    free(c_blocks);
+ 
+ x11_close:
+     x11_connection_close(connection);
+diff --git a/src/signal-handler.c b/src/signal-handler.c
+index d816dcd..50fc72d 100644
+--- a/src/signal-handler.c
++++ b/src/signal-handler.c
+@@ -14,7 +14,7 @@
+ typedef struct signalfd_siginfo signal_info;
+ 
+ signal_handler signal_handler_new(
+-    block *const blocks, const unsigned short block_count,
++    block **blocks, const unsigned short block_count,
+     const signal_refresh_callback refresh_callback,
+     const signal_timer_callback timer_callback) {
+     signal_handler handler = {
+@@ -43,7 +43,7 @@ int signal_handler_init(signal_handler *const handler) {
+     (void)sigaddset(&set, SIGTERM);
+ 
+     for (unsigned short i = 0; i < handler->block_count; ++i) {
+-        const block *const block = &handler->blocks[i];
++        block *block = handler->blocks[i];
+         if (block->signal > 0) {
+             if (sigaddset(&set, SIGRTMIN + block->signal) != 0) {
+                 (void)fprintf(
+@@ -112,7 +112,7 @@ int signal_handler_process(signal_handler *const handler, timer *const timer) {
+     }
+ 
+     for (unsigned short i = 0; i < handler->block_count; ++i) {
+-        block *const block = &handler->blocks[i];
++        block *const block = handler->blocks[i];
+         if (block->signal == signal - SIGRTMIN) {
+             const uint8_t button = (uint8_t)info.ssi_int;
+             block_execute(block, button);
+diff --git a/src/status.c b/src/status.c
+index a3a4794..1ba8bd7 100644
+--- a/src/status.c
++++ b/src/status.c
+@@ -5,7 +5,7 @@
+ #include <string.h>
+ 
+ #include "block.h"
+-#include "config.h"
++#include "tomlc.h"
+ #include "util.h"
+ #include "x11.h"
+ 
+@@ -13,51 +13,50 @@ static bool has_status_changed(const status *const status) {
+     return strcmp(status->current, status->previous) != 0;
+ }
+ 
+-status status_new(const block *const blocks,
++status status_new(block **blocks,
+                   const unsigned short block_count) {
+     status status = {
+-        .current = {[0] = '\0'},
+-        .previous = {[0] = '\0'},
+-
+         .blocks = blocks,
+         .block_count = block_count,
+     };
+ 
++    status.status_sz = ((n_blocks * max_block_output_length * UTF8_MAX_BYTE_COUNT + clickable_blocks) +
++        (n_blocks - 1 + leading_delimiter + trailing_delimiter) * (delimiter_len - 1) + 1);
++    status.current = malloc(status.status_sz * sizeof(char));
++    status.previous = malloc(status.status_sz * sizeof(char));
++
++    status.current[0] = '\0';
++    status.previous[0] = '\0';
++
+     return status;
+ }
+ 
+ bool status_update(status *const status) {
+-    (void)strncpy(status->previous, status->current, LEN(status->current));
++    (void)strncpy(status->previous, status->current, status->status_sz);
+     status->current[0] = '\0';
+ 
+     for (unsigned short i = 0; i < status->block_count; ++i) {
+-        const block *const block = &status->blocks[i];
++        block *block = status->blocks[i];
+ 
+         if (strlen(block->output) > 0) {
+-#if LEADING_DELIMITER
+-            (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
+-#else
+-            if (status->current[0] != '\0') {
+-                (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
++            if (leading_delimiter)
++              (void)strncat(status->current, delimiter, delimiter_len);
++            else if (status->current[0] != '\0') {
++                (void)strncat(status->current, delimiter, delimiter_len);
+             }
+-#endif
+ 
+-#if CLICKABLE_BLOCKS
+-            if (block->signal > 0) {
++            if (clickable_blocks && block->signal > 0) {
+                 const char signal[] = {(char)block->signal, '\0'};
+                 (void)strncat(status->current, signal, LEN(signal));
+             }
+-#endif
+ 
+-            (void)strncat(status->current, block->output, LEN(block->output));
++            (void)strncat(status->current, block->output, block->output_len);
+         }
+     }
+ 
+-#if TRAILING_DELIMITER
+-    if (status->current[0] != '\0') {
+-        (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
++    if (trailing_delimiter && status->current[0] != '\0') {
++        (void)strncat(status->current, delimiter, delimiter_len);
+     }
+-#endif
+ 
+     return has_status_changed(status);
+ }
+diff --git a/src/timer.c b/src/timer.c
+index 2ee555b..a3be044 100644
+--- a/src/timer.c
++++ b/src/timer.c
+@@ -8,31 +8,31 @@
+ #include "block.h"
+ #include "util.h"
+ 
+-static unsigned int compute_tick(const block *const blocks,
++static unsigned int compute_tick(block **blocks,
+                                  const unsigned short block_count) {
+     unsigned int tick = 0;
+ 
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        const block *const block = &blocks[i];
++        block *block = blocks[i];
+         tick = gcd(block->interval, tick);
+     }
+ 
+     return tick;
+ }
+ 
+-static unsigned int compute_reset_value(const block *const blocks,
++static unsigned int compute_reset_value(block **blocks,
+                                         const unsigned short block_count) {
+     unsigned int reset_value = 1;
+ 
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        const block *const block = &blocks[i];
++        block *block = blocks[i];
+         reset_value = MAX(block->interval, reset_value);
+     }
+ 
+     return reset_value;
+ }
+ 
+-timer timer_new(const block *const blocks, const unsigned short block_count) {
++timer timer_new(block **blocks, const unsigned short block_count) {
+     const unsigned int reset_value = compute_reset_value(blocks, block_count);
+ 
+     timer timer = {
+@@ -59,7 +59,7 @@ int timer_arm(timer *const timer) {
+     return 0;
+ }
+ 
+-bool timer_must_run_block(const timer *const timer, const block *const block) {
++bool timer_must_run_block(const timer *const timer, block *block) {
+     if (timer == NULL || timer->time == timer->reset_value) {
+         return true;
+     }
+diff --git a/src/tomlc.c b/src/tomlc.c
+new file mode 100644
+index 0000000..9c5cedb
+--- /dev/null
++++ b/src/tomlc.c
+@@ -0,0 +1,71 @@
++
++#include "tomlc.h"
++#include "block.h"
++
++#include "../tomlc99/toml.h"
++
++const char *delimiter = "  ";
++int delimiter_len;
++
++int max_block_output_length = 45;
++int clickable_blocks = 1;
++int leading_delimiter = 0;
++int trailing_delimiter = 0;
++
++int n_blocks = 0;
++block **c_blocks;
++
++int cfg_read_str(toml_table_t *conf, char *key, const char **dest) {
++    toml_datum_t d = toml_string_in(conf, key);
++    if (!d.ok)
++        return 0;
++    *dest = d.u.s;
++    return 1;
++}
++
++void cfg_read_int(toml_table_t *conf, char *key, int *dest) {
++    toml_datum_t d = toml_int_in(conf, key);
++    if (!d.ok)
++        return;
++    *dest = d.u.i;
++}
++
++void read_cfgfile() {
++    const char *config_file = strcat(getenv("XDG_CONFIG_HOME"), "/dwm/blocks.toml");
++    FILE *fp = fopen(config_file, "r");
++    if (fp) {
++        char errbuf[200];
++        toml_table_t *conf = toml_parse_file(fp, errbuf, sizeof(errbuf));
++        fclose(fp);
++        if (conf) {
++            cfg_read_int(conf, "max_block_output_length", &max_block_output_length);
++            cfg_read_int(conf, "clickable_blocks", &clickable_blocks);
++            cfg_read_int(conf, "leading_delimiter", &leading_delimiter);
++            cfg_read_int(conf, "trailing_delimiter", &trailing_delimiter);
++            cfg_read_str(conf, "delimiter", &delimiter);
++            delimiter_len = strlen(delimiter);
++
++            /* blocks */
++            toml_array_t *d = toml_array_in(conf, "blocks");
++            n_blocks = toml_array_nelem(d);
++            c_blocks = malloc(n_blocks * sizeof(block));
++            const char *command = "";
++            int interval = 0;
++            int signal = 0;
++            for (int i = 0; i < n_blocks; i++) {
++                toml_table_t *tbl = toml_table_at(d, i);
++                if (!tbl)
++                    continue;
++                cfg_read_str(tbl, "command", &command);
++                cfg_read_int(tbl, "interval", &interval);
++                cfg_read_int(tbl, "signal", &signal);
++                c_blocks[i] = block_new(command, interval, signal);
++            }
++            toml_free(conf);
++        }
++        fprintf(stderr, errbuf);
++    } else {
++        fprintf(stderr, "error: could not open config file %s\n", config_file);
++    }
++}
++
+diff --git a/src/watcher.c b/src/watcher.c
+index 71b6c52..383436f 100644
+--- a/src/watcher.c
++++ b/src/watcher.c
+@@ -5,6 +5,7 @@
+ #include <stdbool.h>
+ #include <stdio.h>
+ 
++#include "tomlc.h"
+ #include "block.h"
+ #include "util.h"
+ 
+@@ -12,8 +13,12 @@ static bool watcher_fd_is_readable(const watcher_fd* const watcher_fd) {
+     return (watcher_fd->revents & POLLIN) != 0;
+ }
+ 
+-int watcher_init(watcher* const watcher, const block* const blocks,
++int watcher_init(watcher* const watcher, block** blocks,
+                  const unsigned short block_count, const int signal_fd) {
++
++    watcher->active_blocks = malloc(n_blocks * sizeof(unsigned short));
++    watcher->fds = malloc((n_blocks + 1) * sizeof(watcher_fd));
++
+     if (signal_fd == -1) {
+         (void)fprintf(
+             stderr,
+@@ -21,12 +26,12 @@ int watcher_init(watcher* const watcher, const block* const blocks,
+         return 1;
+     }
+ 
+-    watcher_fd* const fd = &watcher->fds[SIGNAL_FD];
++    watcher_fd* const fd = &watcher->fds[n_blocks];
+     fd->fd = signal_fd;
+     fd->events = POLLIN;
+ 
+     for (unsigned short i = 0; i < block_count; ++i) {
+-        const int block_fd = blocks[i].pipe[READ_END];
++        const int block_fd = blocks[i]->pipe[READ_END];
+         if (block_fd == -1) {
+             (void)fprintf(
+                 stderr,
+@@ -43,7 +48,7 @@ int watcher_init(watcher* const watcher, const block* const blocks,
+ }
+ 
+ int watcher_poll(watcher* watcher, const int timeout_ms) {
+-    int event_count = poll(watcher->fds, LEN(watcher->fds), timeout_ms);
++    int event_count = poll(watcher->fds, n_blocks + 1, timeout_ms);
+ 
+     // Don't return non-zero status for signal interruptions.
+     if (event_count == -1 && errno != EINTR) {
+@@ -51,12 +56,13 @@ int watcher_poll(watcher* watcher, const int timeout_ms) {
+         return 1;
+     }
+ 
+-    watcher->got_signal = watcher_fd_is_readable(&watcher->fds[SIGNAL_FD]);
++    watcher->got_signal = watcher_fd_is_readable(&watcher->fds[n_blocks]);
+ 
+     watcher->active_block_count = event_count - (int)watcher->got_signal;
++
+     unsigned short i = 0;
+     unsigned short j = 0;
+-    while (i < event_count && j < LEN(watcher->active_blocks)) {
++    while (i < event_count && j < n_blocks) {
+         if (watcher_fd_is_readable(&watcher->fds[j])) {
+             watcher->active_blocks[i] = j;
+             ++i;
+diff --git a/tomlc99 b/tomlc99
+new file mode 160000
+index 0000000..5221b3d
+--- /dev/null
++++ b/tomlc99
+@@ -0,0 +1 @@
++Subproject commit 5221b3d3d66c25a1dc6f0372b4f824f1202fe398

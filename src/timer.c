@@ -8,31 +8,31 @@
 #include "block.h"
 #include "util.h"
 
-static unsigned int compute_tick(const block *const blocks,
+static unsigned int compute_tick(block **blocks,
                                  const unsigned short block_count) {
     unsigned int tick = 0;
 
     for (unsigned short i = 0; i < block_count; ++i) {
-        const block *const block = &blocks[i];
+        block *block = blocks[i];
         tick = gcd(block->interval, tick);
     }
 
     return tick;
 }
 
-static unsigned int compute_reset_value(const block *const blocks,
+static unsigned int compute_reset_value(block **blocks,
                                         const unsigned short block_count) {
     unsigned int reset_value = 1;
 
     for (unsigned short i = 0; i < block_count; ++i) {
-        const block *const block = &blocks[i];
+        block *block = blocks[i];
         reset_value = MAX(block->interval, reset_value);
     }
 
     return reset_value;
 }
 
-timer timer_new(const block *const blocks, const unsigned short block_count) {
+timer timer_new(block **blocks, const unsigned short block_count) {
     const unsigned int reset_value = compute_reset_value(blocks, block_count);
 
     timer timer = {
@@ -59,7 +59,7 @@ int timer_arm(timer *const timer) {
     return 0;
 }
 
-bool timer_must_run_block(const timer *const timer, const block *const block) {
+bool timer_must_run_block(const timer *const timer, block *block) {
     if (timer == NULL || timer->time == timer->reset_value) {
         return true;
     }

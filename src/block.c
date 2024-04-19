@@ -10,21 +10,22 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "config.h"
+#include "tomlc.h"
 #include "util.h"
 
-block block_new(const char *const command, const unsigned int interval,
+block *block_new(const char *const command, const unsigned int interval,
                 const int signal) {
-    block block = {
-        .command = command,
-        .interval = interval,
-        .signal = signal,
+    block *b = malloc(sizeof(block));
+    b->command = command;
+    b->interval = interval;
+    b->signal = signal;
+    b->fork_pid = -1;
 
-        .output = {[0] = '\0'},
-        .fork_pid = -1,
-    };
+    b->output_len = max_block_output_length * UTF8_MAX_BYTE_COUNT;
+    b->output = malloc(b->output_len * sizeof(char));
+    b->output[0] = '\0';
 
-    return block;
+    return b;
 }
 
 int block_init(block *const block) {
@@ -46,6 +47,9 @@ int block_deinit(block *const block) {
                       block->command);
         return 1;
     }
+
+    free(block->output);
+    free(block);
 
     return 0;
 }
@@ -88,7 +92,8 @@ int block_execute(block *const block, const uint8_t button) {
 
         // Ensure null-termination since fgets() will leave buffer untouched on
         // no output.
-        char buffer[LEN(block->output)] = {[0] = null};
+        char buffer[block->output_len];
+        buffer[0] = null;
         (void)fgets(buffer, LEN(buffer), file);
 
         // Remove trailing newlines.
@@ -102,7 +107,7 @@ int block_execute(block *const block, const uint8_t button) {
         }
 
         const size_t output_size =
-            truncate_utf8_string(buffer, LEN(buffer), MAX_BLOCK_OUTPUT_LENGTH);
+            truncate_utf8_string(buffer, LEN(buffer), max_block_output_length);
         (void)write(write_fd, buffer, output_size);
 
         exit(EXIT_SUCCESS);
@@ -112,10 +117,10 @@ int block_execute(block *const block, const uint8_t button) {
 }
 
 int block_update(block *const block) {
-    char buffer[LEN(block->output)];
+    char buffer[block->output_len];
 
     const ssize_t bytes_read =
-        read(block->pipe[READ_END], buffer, LEN(buffer));
+        read(block->pipe[READ_END], buffer, block->output_len);
     if (bytes_read == -1) {
         (void)fprintf(stderr,
                       "error: could not fetch output of \"%s\" block\n",

@@ -7,9 +7,9 @@
 #include "timer.h"
 
 typedef sigset_t signal_set;
-typedef int (*signal_refresh_callback)(block* const blocks,
+typedef int (*signal_refresh_callback)(block **blocks,
                                        const unsigned short block_count);
-typedef int (*signal_timer_callback)(block* const blocks,
+typedef int (*signal_timer_callback)(block **blocks,
                                      const unsigned short block_code,
                                      timer* const timer);
 
@@ -18,12 +18,12 @@ typedef struct {
     const signal_refresh_callback refresh_callback;
     const signal_timer_callback timer_callback;
 
-    block* const blocks;
+    block **blocks;
     const unsigned short block_count;
 } signal_handler;
 
 signal_handler signal_handler_new(
-    block* const blocks, const unsigned short block_count,
+    block **blocks, const unsigned short block_count,
     const signal_refresh_callback refresh_callback,
     const signal_timer_callback timer_callback);
 int signal_handler_init(signal_handler* const handler);

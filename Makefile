@@ -16,7 +16,7 @@ CFLAGS += -Wall -Wpedantic -Wextra -Wswitch-enum
 CFLAGS += $(shell pkg-config --cflags $(LIBS))
 LDLIBS := $(shell pkg-config --libs $(LIBS))
 
-SRCS := $(wildcard $(SRC_DIR)/*.c)
+SRCS := $(wildcard $(SRC_DIR)/*.c) tomlc99/toml.c
 OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(SRCS:.c=.o))
 
 INSTALL_DIR := $(DESTDIR)$(PREFIX)/bin
@@ -33,7 +33,7 @@ endif
 
 all: $(BUILD_DIR)/$(BIN)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c config.h
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$Qmkdir -p $(@D)
 	$(PRINTF) "CC" $@
 	$Q$(COMPILE.c) -o $@ $<

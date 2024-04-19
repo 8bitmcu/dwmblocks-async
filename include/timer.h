@@ -14,8 +14,8 @@ typedef struct {
     const unsigned int reset_value;
 } timer;
 
-timer timer_new(const block *const blocks, const unsigned short block_count);
+timer timer_new(block **blocks, const unsigned short block_count);
 int timer_arm(timer *const timer);
-bool timer_must_run_block(const timer *const timer, const block *const block);
+bool timer_must_run_block(const timer *const timer, block *block);
 
 #endif  // TIMER_H

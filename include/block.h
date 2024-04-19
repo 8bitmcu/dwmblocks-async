@@ -5,24 +5,24 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "config.h"
 #include "util.h"
 
 typedef struct {
-    const char *const command;
-    const unsigned int interval;
-    const int signal;
+    const char *command;
+    unsigned int interval;
+    int signal;
 
     int pipe[PIPE_FD_COUNT];
-    char output[MAX_BLOCK_OUTPUT_LENGTH * UTF8_MAX_BYTE_COUNT + 1];
+    char *output;
+    int output_len;
     pid_t fork_pid;
 } block;
 
-block block_new(const char *const command, const unsigned int interval,
+block *block_new(const char *const command, const unsigned int interval,
                 const int signal);
-int block_init(block *const block);
-int block_deinit(block *const block);
-int block_execute(block *const block, const uint8_t button);
-int block_update(block *const block);
+int block_init(block *block);
+int block_deinit(block *block);
+int block_execute(block *block, const uint8_t button);
+int block_update(block *block);
 
 #endif  // BLOCK_H
