@@ -13,17 +13,24 @@
 #include "tomlc.h"
 #include "util.h"
 
-block *block_new(const char *const command, const unsigned int interval,
-                const int signal) {
+block *block_new(const char *const command, const unsigned int interval, const int signal) {
     block *b = malloc(sizeof(block));
-    b->command = command;
+    if (!b) return NULL;
+
+    b->command = strdup(command);
     b->interval = interval;
     b->signal = signal;
     b->fork_pid = -1;
 
-    b->output_len = max_block_output_length * UTF8_MAX_BYTE_COUNT;
-    b->output = malloc(b->output_len * sizeof(char));
-    b->output[0] = '\0';
+    b->output_len = max_block_output_length * 4;
+    b->output = malloc(b->output_len); 
+    if (b->output) {
+        b->output[0] = '\0';
+    } else {
+        free(b->command);
+        free(b);
+        return NULL;
+    }
 
     return b;
 }
@@ -48,6 +55,7 @@ int block_deinit(block *const block) {
         return 1;
     }
 
+    free(block->command);
     free(block->output);
     free(block);
 

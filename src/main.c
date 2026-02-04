@@ -166,5 +166,7 @@ deinit_blocks:
 x11_close:
     x11_connection_close(connection);
 
+    free(delimiter);
+
     return status;
 }
